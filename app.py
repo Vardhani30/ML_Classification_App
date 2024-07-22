@@ -7,3 +7,8 @@ import pandas as pd
 from streamlit_pandas_profiling import st_profile_report
 import os 
 
+with st.sidebar: 
+    st.image("https://www.onepointltd.com/wp-content/uploads/2020/03/inno2.png")
+    st.title("AutoNickML")
+    choice = st.radio("Navigation", ["Upload","Profiling","Modelling", "Download"])
+    st.info("This project application helps you build and explore your data.")
