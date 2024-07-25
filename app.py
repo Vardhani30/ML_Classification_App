@@ -5,6 +5,8 @@ from tpot import TPOTClassifier, TPOTRegressor
 from streamlit_pandas_profiling import st_profile_report
 import pandas_profiling
 import time
+import pickle 
+from sklearn.metrics import SCORERS
 
 # Set up the top bar with a transparent background
 st.markdown("""
@@ -33,8 +35,7 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-st.header("End to end solution for your machine learning problem")
-st.write("***Provides a Pipeline***")
+st.header("End to end solution to your machine learning problem")
 # Initialize session state variables
 if 'data' not in st.session_state:
     st.session_state.data = None
@@ -60,6 +61,7 @@ def upload_step():
     file = st.file_uploader("Upload your CSV dataset")
     if file:
         st.session_state.data = pd.read_csv(file, index_col=None)
+        st.write(st.session_state.data.head(10))
         st.success("Data uploaded successfully")
 
 def profiling_step():
@@ -80,68 +82,80 @@ def modelling_step():
         if task == "Classification":
             metric = st.selectbox("Choose the metric for evaluation", ["accuracy", "f1", "precision", "recall", "roc_auc"])
         else:
-            metric = st.selectbox("Choose the metric for evaluation", ["mean_absolute_error", "mean_squared_error", "r2"])
+            metric = st.selectbox("Choose the metric for evaluation", ["neg_mean_absolute_error", "neg_mean_squared_error", "r2"])
         
         X = st.session_state.data.drop(columns=[target])
         y = st.session_state.data[target]
 
-        st.write("Setup is complete. Please wait, the best model will be shown shortly.")
-        
-        progress_bar = st.progress(0)
-        status_text = st.empty()
-        stop_button = st.button("Stop Optimization")
-
-        if stop_button:
-            st.session_state.stop_optimization = True
-        
-        def update_progress(progress, details=""):
-            progress_bar.progress(progress)
-            status_text.text(f"Optimization Progress: {progress}% | {details}")
-
-        if task == "Classification":
-            automl = TPOTClassifier(verbosity=2, random_state=42, scoring=metric)
-        else:
-            automl = TPOTRegressor(verbosity=2, random_state=42, scoring=metric)
-
-        try:
-            for i in range(1, 101):
-                if st.session_state.stop_optimization:
-                    st.write("Optimization stopped.")
-                    break
-                simulated_details = f"{i * 101}/{10000} [04:03<43:38, 3.57 pipeline/s]"
-                time.sleep(0.1)
-                update_progress(i, simulated_details)
+        if st.button("Run Modelling"):
+            st.write("Setup is complete. Please wait, the best model will be shown shortly.")
             
-            if not st.session_state.stop_optimization:
-                automl.fit(X, y)
-                st.write("Best model:", automl.fitted_pipeline_)
-                st.write("Best score:", automl.score(X, y))
-                st.write("Best parameters:", automl.fitted_pipeline_.get_params())
-            st.session_state.stop_optimization = False  # Reset stop flag after completion
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            st.session_state.stop_optimization = False
 
-        except Exception as e:
-            st.error(f"An error occurred: {e}")
-            st.stop()
+            def update_progress(progress, details=""):
+                progress_bar.progress(progress)
+                status_text.text(f"Optimization Progress: {progress}% | {details}")
 
-        if st.button("Export Model"):
-            automl.export('best_model.py')
-            st.success("Model exported successfully.")
+            if task == "Classification":
+                automl = TPOTClassifier(verbosity=2, random_state=42, scoring=metric,n_jobs=-1,cv=3,generations=10)
+            else:
+                automl = TPOTRegressor(verbosity=2, random_state=42, scoring=metric,n_jobs=-1,cv=3,generations=10)
 
-        progress_bar.progress(100)
-        status_text.text("Progress: 100%")
-        
+            try:
+                for i in range(1, 101):
+                    if st.session_state.stop_optimization:
+                        st.write("Optimization stopped.")
+                        break
+                    time.sleep(0.1)
+                    update_progress(i)
+                
+                if not st.session_state.stop_optimization:
+                    automl.fit(X, y)
+                    st.session_state.best_model = automl.fitted_pipeline_
+                    st.session_state.best_score = automl.score(X, y)
+                    st.session_state.best_params = automl.fitted_pipeline_.get_params()
+                    
+                    automl.export('best_model.py')
+
+                    # Save the best model
+                    with open('best_model.pkl', 'wb') as f:
+                        pickle.dump(automl.fitted_pipeline_, f)
+                        
+                st.session_state.stop_optimization = False  # Reset stop flag after completion
+
+            except Exception as e:
+                st.error(f"An error occurred: {e}")
+                st.stop()
+
+            progress_bar.progress(100)
+            status_text.text("Progress: 100%")
+            
     else:
         st.warning("No data available. Please upload a dataset first.")
 
-def download_step():
-    st.write("Download options will be provided here.")
-    st.write("Thank you for using the application!")
+# To display the best model information in a separate block
+if 'best_model' in st.session_state:
+    st.write("Best Model Information")
+    st.write("Best model:", st.session_state.best_model)
+    st.write("Best score:", st.session_state.best_score)
+    st.write("Best parameters:", st.session_state.best_params)
 
-# Show the current step
+    with open('best_model.py', 'r') as file:
+        st.code(file.read(), language='python')
+
+
+def download_step():
+    st.write("Thank you for using the application!")
+    if 'best_model.pkl' in st.session_state:
+        with open('best_model.pkl', 'rb') as f:
+            st.download_button('Download Model', f, file_name="best_model.pkl")
+
+
 show_step(st.session_state.step)
 
-# Add "Back" and "Next" buttons
-col1, col2 = st.columns([1, 1])
+col1, col2 = st.columns([1, 0.1])
 with col1:
     if st.session_state.step > 0:
         if st.button("Back"):
