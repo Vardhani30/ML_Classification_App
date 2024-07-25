@@ -83,6 +83,9 @@ def modelling_step():
             metric = st.selectbox("Choose the metric for evaluation", ["accuracy", "f1", "precision", "recall", "roc_auc"])
         else:
             metric = st.selectbox("Choose the metric for evaluation", ["neg_mean_absolute_error", "neg_mean_squared_error", "r2"])
+
+        generations = st.slider("Select the number of generations", min_value=5, max_value=1000, value=10)
+        cv_splits = st.slider("Select the number of cross-validation splits", min_value=3, max_value=10, value=3)
         
         X = st.session_state.data.drop(columns=[target])
         y = st.session_state.data[target]
@@ -99,9 +102,9 @@ def modelling_step():
                 status_text.text(f"Optimization Progress: {progress}% | {details}")
 
             if task == "Classification":
-                automl = TPOTClassifier(verbosity=2, random_state=42, scoring=metric,n_jobs=-1,cv=3,generations=10)
+                automl = TPOTClassifier(verbosity=2, random_state=42, scoring=metric,n_jobs=-1,cv=cv_splits,generations=generations)
             else:
-                automl = TPOTRegressor(verbosity=2, random_state=42, scoring=metric,n_jobs=-1,cv=3,generations=10)
+                automl = TPOTRegressor(verbosity=2, random_state=42, scoring=metric,n_jobs=-1,cv=cv_splits,generations=generations)
 
             try:
                 for i in range(1, 101):
