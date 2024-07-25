@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-from pycaret.classification import setup, compare_models, pull, save_model, load_model
 from tpot import TPOTClassifier, TPOTRegressor
 from streamlit_pandas_profiling import st_profile_report
 import pandas_profiling
