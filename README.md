@@ -5,7 +5,7 @@ This is a Streamlit web app that provides end-to-end solutions by providing a pi
 
 **Client:** Streamlit
 
-**Server:** Python , TPOT
+**Server:** Python , TPOT, CSS
 
 **Libraries and Tools:**
 1) pandas- For data manipulation
