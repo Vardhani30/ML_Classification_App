@@ -1,6 +1,6 @@
 **OptiML**
 
-This is a Streamlit web app that provides end-to-end solutions by providing a pipeline in Python based on the user's requirements. This app includes exploratory data analysis of the data, choosing your target variable, task type(regression, classification), metric, no of epochs, and even cross-validation. This is a customizable yet no-code app that creates a perfect pipeline.
+This is a Streamlit web app that provides end-to-end machine learning solutions by providing a pipeline in Python based on the user's requirements. This app includes exploratory data analysis of the data, choosing your target variable, task type(regression, classification), metric, no of epochs, and even cross-validation. This is a customizable yet no-code app that creates a perfect pipeline.
 ## Tech Stack
 
 **Client:** Streamlit
